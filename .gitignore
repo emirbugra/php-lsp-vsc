@@ -1,0 +1,8 @@
+node_modules/
+dist/
+out/
+*.vsix
+server/php-lsp
+server/php-lsp.exe
+.env
+.vscode/launch.json

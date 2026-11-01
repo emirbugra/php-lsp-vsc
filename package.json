@@ -1,0 +1,1232 @@
+{
+  "name": "php-lsp-vsc",
+  "displayName": "PHP LSP (Rust)",
+  "description": "Fast PHP language server written in Rust: completion, navigation, references, rename, inspections, type inference, Laravel support and a built-in PhpStorm-compatible formatter.",
+  "version": "0.1.0",
+  "preview": true,
+  "publisher": "emirbugra",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#5B67A3",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/kodmanyagha/php-lsp-vsc#readme",
+  "bugs": {
+    "url": "https://github.com/kodmanyagha/php-lsp-vsc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kodmanyagha/php-lsp-vsc"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "php",
+    "lsp",
+    "language server",
+    "laravel",
+    "formatter",
+    "psr-12",
+    "intellisense",
+    "rust"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:php"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "phpLsp.showPanel",
+        "title": "PHP LSP: Show Info Panel",
+        "icon": {
+          "light": "media/icon.svg",
+          "dark": "media/icon.svg"
+        }
+      },
+      {
+        "command": "phpLsp.restart",
+        "title": "PHP LSP: Restart Server"
+      },
+      {
+        "command": "phpLsp.showOutput",
+        "title": "PHP LSP: Show Server Log"
+      },
+      {
+        "command": "phpLsp.importCodeStyle",
+        "title": "PHP LSP: Import Code Style (PhpStorm XML or .editorconfig)…"
+      },
+      {
+        "command": "phpLsp.exportCodeStyle",
+        "title": "PHP LSP: Export Code Style (PhpStorm XML or .editorconfig)…"
+      }
+    ],
+    "configuration": {
+      "title": "PHP LSP",
+      "properties": {
+        "phpLsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to the `php-lsp` binary. Leave empty to use the bundled binary, a development build next to this repository, or `php-lsp` from `PATH`."
+        },
+        "phpLsp.indexVendor": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Index `vendor/` directories (needed for completion and navigation into libraries)."
+        },
+        "phpLsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communication between VS Code and the language server."
+        },
+        "phpLsp.logLevel": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug",
+            "trace"
+          ],
+          "default": "info",
+          "description": "Log level of the language server (written to the output channel)."
+        },
+        "phpLsp.formatter.tool": {
+          "type": "string",
+          "enum": ["auto", "builtin", "pint", "php-cs-fixer", "off"],
+          "enumDescriptions": [
+            "The project's own tool when it has one (pint.json, .php-cs-fixer.php, or vendor/bin/pint / php-cs-fixer), otherwise the built-in formatter.",
+            "Always the built-in formatter (settings: phpLsp.format.*).",
+            "Laravel Pint (vendor/bin, then PATH).",
+            "PHP-CS-Fixer (vendor/bin, then PATH).",
+            "No formatting."
+          ],
+          "default": "auto",
+          "markdownDescription": "Formatter used by *Format Document*. *Format Selection* and indenting while typing always use the built-in formatter. Restart the server after changing."
+        },
+        "phpLsp.formatter.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Explicit path to the formatter executable (overrides detection). Restart the server after changing."
+        },
+        "phpLsp.inspections.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Report undefined classes/functions/methods, unused imports, missing abstract implementations and deprecated usages. Restart the server after changing."
+        },
+        "phpLsp.laravel.diagnostics": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Warn about Laravel route, view, config and translation names that do not exist (`route('…')`, `view('…')`, `config('…')`, `__('…')`). Restart the server after changing."
+        },
+        "phpLsp.format.preset": {
+          "type": "string",
+          "enum": ["psr12", "per-cs", "per-cs3", "laravel", "symfony", "pear", "zend", "codeigniter", "phpstorm"],
+          "enumDescriptions": [
+            "PSR-12 (the same values as PhpStorm's PSR12 style).",
+            "PER Coding Style 2.0 (trailing commas, short arrays, empty bodies as {}).",
+            "PER Coding Style 3.0.",
+            "PhpStorm's Laravel style (no spaces around ., two spaces in @param lines).",
+            "PhpStorm's Symfony style (blank line before return, trailing commas in arrays).",
+            "PEAR (80 columns, aligned PHPDoc).",
+            "Zend Framework (based on PEAR).",
+            "CodeIgniter (tabs, braces on the next line for control statements, TRUE / FALSE / NULL).",
+            "PhpStorm's Default scheme for PHP."
+          ],
+          "default": "psr12",
+          "markdownDescription": "Code style of the built-in formatter. A project's own code style (see `#phpLsp.format.useProjectCodeStyle#`) replaces it."
+        },
+        "phpLsp.format.useProjectCodeStyle": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Use the project's code style files: the PhpStorm scheme in `.idea/codeStyles` (instead of the preset) and `.editorconfig` files (standard keys and PhpStorm's `ij_php_*` keys). `#phpLsp.format.options#` still applies on top."
+        },
+        "phpLsp.format.options": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Overrides for the preset, using PhpStorm's own option names (so values can be copied from a PhpStorm code style), e.g. `{ \"INDENT_SIZE\": 2, \"CONCAT_SPACES\": false, \"SPACE_AFTER_TYPE_CAST\": true }`. Covers indentation, blank lines, spaces around operators / parentheses / brackets / braces / colons / types, and the letter case of keywords and `true` / `false` / `null`. Applies on top of the preset and the project's code style files; changes take effect without a restart. *PHP LSP: Import Code Style* fills this in from a PhpStorm scheme or an `.editorconfig`.",
+          "properties": {
+            "INDENT_SIZE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 4,
+              "markdownDescription": "Columns per indentation level."
+            },
+            "CONTINUATION_INDENT_SIZE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 4,
+              "markdownDescription": "Extra columns for a line that continues a statement or an element (`->` chains, wrapped conditions, operands)."
+            },
+            "TAB_SIZE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 4,
+              "markdownDescription": "Width of a tab character."
+            },
+            "USE_TAB_CHARACTER": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Indent with tabs instead of spaces."
+            },
+            "INDENT_CODE_IN_PHP_TAGS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "In templates, code inside `<?php … ?>` one level deeper than the `<?php` line."
+            },
+            "INDENT_CASE_FROM_SWITCH": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`case` / `default` one level deeper than `switch`."
+            },
+            "KEEP_BLANK_LINES_IN_CODE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 2,
+              "markdownDescription": "Most blank lines kept in a row inside function bodies."
+            },
+            "KEEP_BLANK_LINES_IN_DECLARATIONS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 2,
+              "markdownDescription": "Most blank lines kept in a row between declarations (top level, class bodies)."
+            },
+            "KEEP_BLANK_LINES_BEFORE_RBRACE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "markdownDescription": "Most blank lines kept before a closing `}`."
+            },
+            "KEEP_BLANK_LINES_AFTER_LBRACE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "markdownDescription": "Most blank lines kept right after an opening `{`."
+            },
+            "KEEP_FIRST_COLUMN_COMMENT": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Leave line comments (and `/* */` comments) that start in the first column there."
+            },
+            "KEEP_INDENTS_ON_EMPTY_LINES": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Keep the indentation on blank lines."
+            },
+            "STRIP_TRAILING_SPACES": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Remove whitespace at the end of lines."
+            },
+            "ENSURE_NEWLINE_AT_EOF": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "End the file with exactly one line break."
+            },
+            "LINE_SEPARATOR": {
+              "type": "string",
+              "default": "",
+              "markdownDescription": "`\\n`, `\\r\\n`, or empty to keep the file's own line separator."
+            },
+            "FORMATTER_TAGS_ENABLED": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Leave regions between `// @formatter:off` and `// @formatter:on` comments alone."
+            },
+            "FORMATTER_OFF_TAG": {
+              "type": "string",
+              "default": "@formatter:off"
+            },
+            "FORMATTER_ON_TAG": {
+              "type": "string",
+              "default": "@formatter:on"
+            },
+            "BLANK_LINES_AFTER_OPENING_TAG": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "BLANK_LINES_BEFORE_PACKAGE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Before `namespace`."
+            },
+            "BLANK_LINES_AFTER_PACKAGE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "After `namespace X;`."
+            },
+            "BLANK_LINES_BEFORE_IMPORTS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Before the `use` imports (and trait `use` in classes)."
+            },
+            "BLANK_LINES_AFTER_IMPORTS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "BLANK_LINES_BETWEEN_IMPORTS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Between `use`, `use function` and `use const` groups."
+            },
+            "BLANK_LINES_AROUND_CLASS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "BLANK_LINES_AFTER_FUNCTION": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "After a function declared at the top level."
+            },
+            "BLANK_LINES_AROUND_FIELD": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_AROUND_METHOD": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "BLANK_LINES_AROUND_CONSTANTS": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_AROUND_ENUM_CASES": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_AROUND_FIELD_IN_INTERFACE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_AROUND_METHOD_IN_INTERFACE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "BLANK_LINES_AFTER_CLASS_HEADER": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_AFTER_ANONYMOUS_CLASS_HEADER": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_BEFORE_CLASS_END": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_BEFORE_METHOD_BODY": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINES_BEFORE_RETURN_STATEMENT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "BLANK_LINE_BEFORE_RETURN_STATEMENT": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "One blank line before `return` (older form of the option above)."
+            },
+            "NEW_LINE_AFTER_PHP_OPENING_TAG": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`<?php` alone on its line."
+            },
+            "KEEP_MULTIPLE_EXPRESSIONS_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Several statements on one line stay there."
+            },
+            "CASE_STATEMENT_ON_NEW_LINE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`case 1: foo();` → `foo();` on its own line."
+            },
+            "CLASS_BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 2,
+              "markdownDescription": "Where `{` goes: 1 end of line, 2 next line, 5 next line if the header is wrapped (3 and 4, \"next line shifted\", are treated as 2). For classes, interfaces, traits, enums."
+            },
+            "METHOD_BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 2,
+              "markdownDescription": "Functions and methods."
+            },
+            "BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Control statements (`if`, `for`, `try` …)."
+            },
+            "LAMBDA_BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Closures."
+            },
+            "ANONYMOUS_BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Anonymous classes."
+            },
+            "NAMESPACE_BRACE_STYLE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "`namespace X { … }`."
+            },
+            "KEEP_RPAREN_AND_LBRACE_ON_ONE_LINE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "With the parameters wrapped, `) {` stays on one line even when `{` goes on the next line."
+            },
+            "KEEP_SIMPLE_BLOCKS_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "One-line blocks stay on one line: `if ($a) { return; }`."
+            },
+            "KEEP_SIMPLE_METHODS_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "KEEP_SIMPLE_LAMBDAS_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "KEEP_SIMPLE_CLASSES_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "FORCE_EMPTY_METHODS_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Empty method bodies become `{}` on the declaration line."
+            },
+            "FORCE_EMPTY_CLASSES_IN_ONE_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "IF_BRACE_FORCE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3,
+              "markdownDescription": "Braces around a single-statement body: 0 never, 1 when it spans lines, 3 always. `if` / `elseif` / `else`."
+            },
+            "FOR_BRACE_FORCE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3,
+              "markdownDescription": "`for` / `foreach`."
+            },
+            "WHILE_BRACE_FORCE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3
+            },
+            "DOWHILE_BRACE_FORCE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3,
+              "markdownDescription": "`do … while`."
+            },
+            "ELSE_IF_STYLE": {
+              "type": "string",
+              "default": "COMBINE",
+              "enum": [
+                "COMBINE",
+                "SEPARATE",
+                "AS_IS"
+              ],
+              "markdownDescription": "`COMBINE`: `else if` → `elseif`; `SEPARATE`: `elseif` → `else if`; `AS_IS`."
+            },
+            "ELSE_ON_NEW_LINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`}` and `else` on separate lines."
+            },
+            "CATCH_ON_NEW_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "FINALLY_ON_NEW_LINE": {
+              "type": "boolean",
+              "default": false
+            },
+            "WHILE_ON_NEW_LINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`}` and the `while` of `do … while` on separate lines."
+            },
+            "RIGHT_MARGIN": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 120,
+              "markdownDescription": "Lines longer than this are wrapped where the options below allow it."
+            },
+            "CALL_PARAMETERS_WRAP": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 5,
+              "markdownDescription": "How lists wrap: 0 never, 1 where needed, 2 always (every item on its own line), 5 every item on its own line when the list does not fit on one line (\"chop down if long\"). Arguments of calls."
+            },
+            "CALL_PARAMETERS_LPAREN_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "A wrapped list starts on a new line after `(`."
+            },
+            "CALL_PARAMETERS_RPAREN_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "A wrapped list ends with `)` on a line of its own."
+            },
+            "METHOD_PARAMETERS_WRAP": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 5,
+              "markdownDescription": "Parameters of functions, methods and closures."
+            },
+            "METHOD_PARAMETERS_LPAREN_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true
+            },
+            "METHOD_PARAMETERS_RPAREN_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true
+            },
+            "ARRAY_INITIALIZER_WRAP": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 5,
+              "markdownDescription": "Array literals (`[…]`, `array(…)`)."
+            },
+            "ARRAY_INITIALIZER_LBRACE_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true
+            },
+            "ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE": {
+              "type": "boolean",
+              "default": true
+            },
+            "METHOD_CALL_CHAIN_WRAP": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "`->` chains: 0 never, 1 where needed, 2 always."
+            },
+            "WRAP_FIRST_METHOD_IN_CALL_CHAIN": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Also wrap before the first `->` of a chain (`$this->a()->b()`)."
+            },
+            "TREAT_MULTILINE_ARRAYS_AND_LAMBDAS_MULTILINE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A closure or array spanning several lines makes the list holding it count as wrapped."
+            },
+            "COMMA_AFTER_LAST_ARRAY_ELEMENT": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A comma after the last element of a multi-line array."
+            },
+            "COMMA_AFTER_LAST_ARGUMENT": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A comma after the last argument of a call (PHP 7.3+)."
+            },
+            "COMMA_AFTER_LAST_ARGUMENT_STYLE": {
+              "type": "string",
+              "default": "WHEN_MULTILINE",
+              "enum": [
+                "WHEN_MULTILINE",
+                "ALWAYS"
+              ],
+              "markdownDescription": "`WHEN_MULTILINE` or `ALWAYS`."
+            },
+            "COMMA_AFTER_LAST_PARAMETER": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A comma after the last parameter (PHP 8.0+)."
+            },
+            "COMMA_AFTER_LAST_PARAMETER_STYLE": {
+              "type": "string",
+              "default": "WHEN_MULTILINE",
+              "enum": [
+                "WHEN_MULTILINE",
+                "ALWAYS"
+              ]
+            },
+            "COMMA_AFTER_LAST_CLOSURE_USE_VAR": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A comma after the last variable of a closure's `use (…)` (PHP 8.0+)."
+            },
+            "COMMA_AFTER_LAST_CLOSURE_USE_VAR_STYLE": {
+              "type": "string",
+              "default": "WHEN_MULTILINE",
+              "enum": [
+                "WHEN_MULTILINE",
+                "ALWAYS"
+              ]
+            },
+            "COMMA_AFTER_LAST_MATCH_ARM": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A comma after the last arm of a multi-line `match`."
+            },
+            "FORCE_SHORT_DECLARATION_ARRAY_STYLE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`array(…)` → `[…]`."
+            },
+            "PHPDOC_PARAM_SPACES_BETWEEN_TAG_AND_TYPE": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "markdownDescription": "Spaces in `@param` / `@var` / `@property` lines: tag → type, type → name, name → description."
+            },
+            "PHPDOC_PARAM_SPACES_BETWEEN_TYPE_AND_NAME": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "PHPDOC_PARAM_SPACES_BETWEEN_NAME_AND_DESCRIPTION": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "ALIGN_PHPDOC_PARAM_NAMES": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up the names of the `@param` lines."
+            },
+            "ALIGN_PHPDOC_COMMENTS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up the descriptions of the `@param` lines."
+            },
+            "PHPDOC_BLANK_LINE_BEFORE_TAGS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "A blank line between the description and the tags."
+            },
+            "PHPDOC_BLANK_LINES_AROUND_PARAMETERS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Blank lines around the `@param` lines."
+            },
+            "PHPDOC_KEEP_BLANK_LINES": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Keep blank lines inside doc comments."
+            },
+            "SORT_PHPDOC_ELEMENTS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Sort tags by the weights below (lower first; equal weights keep their order)."
+            },
+            "LINK_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "THROWS_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 2
+            },
+            "PARAM_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "RETURN_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "AUTHOR_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "INTERNAL_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "USES_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "VERSION_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "API_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "CATEGORY_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "COPYRIGHT_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "DEPRECATED_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "EXAMPLE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "FILESOURCE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "GLOBAL_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "IGNORE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "LICENSE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "METHOD_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "PACKAGE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "PROPERTY_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "PROPERTY_READ_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "PROPERTY_WRITE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "SEE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "SINCE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "SUBPACKAGE_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "TODO_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "VAR_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "UNKNOWN_TAG_WEIGHT": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 28
+            },
+            "ALIGN_KEY_VALUE_PAIRS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up `=>` of the array items that start their line."
+            },
+            "ALIGN_ASSIGNMENTS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up `=` of consecutive one-line assignments."
+            },
+            "ALIGN_CLASS_CONSTANTS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up `=` of consecutive class constants."
+            },
+            "ALIGN_INLINE_COMMENTS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Line up trailing `//` comments of consecutive lines."
+            },
+            "ALIGN_MULTILINE_PARAMETERS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Wrapped parameters line up with the first one when it stays after `(`."
+            },
+            "ALIGN_MULTILINE_PARAMETERS_IN_CALLS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Wrapped arguments line up with the first one when it stays after `(`."
+            },
+            "ALIGN_MULTILINE_ARRAY_INITIALIZER_EXPRESSION": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Wrapped array items line up with the first one when it stays after `[`."
+            },
+            "SPACE_AROUND_ASSIGNMENT_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`=`, `+=`, `??=` … and `=>`."
+            },
+            "SPACE_AROUND_LOGICAL_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`&&`, `||`."
+            },
+            "SPACE_AROUND_EQUALITY_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`==`, `!=`, `===`, `!==`, `<>`, `<=>`."
+            },
+            "SPACE_AROUND_RELATIONAL_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`<`, `>`, `<=`, `>=`."
+            },
+            "SPACE_AROUND_BITWISE_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Binary `&`, `|`, `^`."
+            },
+            "SPACE_AROUND_ADDITIVE_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Binary `+`, `-`."
+            },
+            "SPACE_AROUND_MULTIPLICATIVE_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`*`, `/`, `%`, `**`."
+            },
+            "SPACE_AROUND_SHIFT_OPERATORS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`<<`, `>>`."
+            },
+            "SPACE_AROUND_UNARY_OPERATOR": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Between a unary operator (`-`, `+`, `~`, `++`, `--`, `@`, `&`, `...`) and its operand."
+            },
+            "CONCAT_SPACES": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Around the concatenation operator `.`."
+            },
+            "SPACES_AROUND_NULL_COALESCE_OPERATOR": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`??`."
+            },
+            "SPACES_WITHIN_SHORT_ECHO_TAGS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`<?= $x ?>` instead of `<?=$x?>`."
+            },
+            "SPACE_AROUND_ASSIGNMENT_IN_DECLARE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`=` in `declare(strict_types=1)`."
+            },
+            "SPACES_AROUND_ARROW": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`->`, `?->`, `::`."
+            },
+            "SPACE_BEFORE_COMMA": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_AFTER_COMMA": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_SEMICOLON": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_AFTER_SEMICOLON": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "After `;` inside `for (…)`."
+            },
+            "SPACE_BEFORE_UNARY_NOT": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Before `!`."
+            },
+            "SPACE_AFTER_UNARY_NOT": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "After `!`."
+            },
+            "SPACE_AFTER_TYPE_CAST": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "After `(int)`, `(string)` …."
+            },
+            "SPACE_BEFORE_METHOD_CALL_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_BEFORE_METHOD_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_BEFORE_CLOSURE_LEFT_PARENTHESIS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`function (` of a closure."
+            },
+            "SPACE_BEFORE_SHORT_CLOSURE_LEFT_PARENTHESIS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`fn (` of an arrow function."
+            },
+            "SPACE_BEFORE_IF_PARENTHESES": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Also `elseif`, `match`."
+            },
+            "SPACE_BEFORE_WHILE_PARENTHESES": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_FOR_PARENTHESES": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Also `foreach`."
+            },
+            "SPACE_BEFORE_SWITCH_PARENTHESES": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_CATCH_PARENTHESES": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_WITHIN_PARENTHESES": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "Grouping parentheses and everything without its own option."
+            },
+            "SPACE_WITHIN_METHOD_CALL_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_EMPTY_METHOD_CALL_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_METHOD_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_EMPTY_METHOD_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_IF_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_WHILE_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_FOR_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_SWITCH_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_CATCH_PARENTHESES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_WITHIN_BRACKETS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`$a[ 0 ]`."
+            },
+            "SPACE_WITHIN_ARRAY_INITIALIZER_BRACES": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`[ 1, 2 ]` and `array( 1, 2 )`."
+            },
+            "SPACE_WITHIN_EMPTY_ARRAY_INITIALIZER_BRACES": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACES_AROUND_VAR_WITHIN_BRACKETS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`$a[ $i ]`: a lone variable as the index."
+            },
+            "SPACE_BEFORE_CLASS_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_METHOD_LBRACE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Also closures."
+            },
+            "SPACE_BEFORE_IF_LBRACE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Also `elseif`, `match`."
+            },
+            "SPACE_BEFORE_ELSE_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_WHILE_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_FOR_LBRACE": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "Also `foreach`."
+            },
+            "SPACE_BEFORE_DO_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_SWITCH_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_TRY_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_CATCH_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_FINALLY_LBRACE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_ELSE_KEYWORD": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`} else`, `} elseif`."
+            },
+            "SPACE_BEFORE_WHILE_KEYWORD": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`} while` of `do … while`."
+            },
+            "SPACE_BEFORE_CATCH_KEYWORD": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_FINALLY_KEYWORD": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_QUEST": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_AFTER_QUEST": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_COLON": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_AFTER_COLON": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BETWEEN_TERNARY_QUEST_AND_COLON": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`?:` instead of `? :`."
+            },
+            "SPACE_BEFORE_COLON_IN_RETURN_TYPE": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_AFTER_COLON_IN_RETURN_TYPE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_COLON_IN_NAMED_ARGUMENT": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_AFTER_COLON_IN_NAMED_ARGUMENT": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACE_BEFORE_COLON_IN_ENUM_BACKED_TYPE": {
+              "type": "boolean",
+              "default": false
+            },
+            "SPACE_AFTER_COLON_IN_ENUM_BACKED_TYPE": {
+              "type": "boolean",
+              "default": true
+            },
+            "SPACES_AROUND_PIPE_IN_UNION_TYPE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`int | string`."
+            },
+            "SPACES_AROUND_AMPERSAND_IN_INTERSECTION_TYPE": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`A & B`."
+            },
+            "SPACES_WITHIN_COMPOUND_TYPE_PARENS": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`( A&B )|null`."
+            },
+            "LOWER_CASE_KEYWORDS": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`IF`, `Function`, `NEW` → lower case."
+            },
+            "LOWER_CASE_BOOLEAN_CONST": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`TRUE`, `False` → `true`, `false`."
+            },
+            "LOWER_CASE_NULL_CONST": {
+              "type": "boolean",
+              "default": true,
+              "markdownDescription": "`NULL` → `null`."
+            },
+            "UPPER_CASE_BOOLEAN_CONST": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`true` → `TRUE` (when the lower-case option is off)."
+            },
+            "UPPER_CASE_NULL_CONST": {
+              "type": "boolean",
+              "default": false,
+              "markdownDescription": "`null` → `NULL` (when the lower-case option is off)."
+            }
+          },
+          "additionalProperties": false
+        },
+        "phpLsp.phpVersion": {
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^[0-9]+\\.[0-9]+$",
+          "markdownDescription": "PHP version that *Add return type* / *Add type* must stay compatible with, e.g. `8.1`. Empty: taken from `composer.json` (`config.platform.php`, then `require.php`), else from the installed `php`. Restart the server after changing."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "php.suggest.basic": false,
+      "[php]": {
+        "editor.formatOnType": true
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "phpLsp.showPanel",
+          "group": "navigation@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "launch": "node scripts/launch.mjs",
+    "compile": "tsc -p ./ --noEmit && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "package": "npm run compile && vsce package",
+    "vscode:prepublish": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.4.0"
+  }
+}

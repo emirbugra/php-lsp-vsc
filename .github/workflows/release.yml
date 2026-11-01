@@ -1,0 +1,201 @@
+# Builds the php-lsp server for every platform, packages one .vsix per VS Code target and publishes
+# them to the VS Code Marketplace and Open VSX.
+#
+# - Push a tag `v<version>` (equal to "version" in package.json) to build and publish.
+# - Run it by hand (Actions → Release → Run workflow) to build the packages only; tick "publish" to
+#   publish too.
+#
+# Secrets: VSCE_PAT (VS Code Marketplace, required for publishing), OVSX_PAT (Open VSX, optional:
+# skipped when not set). The server is built from kodmanyagha/php-lsp-rs at the "server_ref" input,
+# else the SERVER_REF repository variable, else main.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      server_ref:
+        description: php-lsp-rs branch, tag or commit to build the server from
+        default: main
+      publish:
+        description: Publish to the Marketplace / Open VSX
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  SERVER_REPO: kodmanyagha/php-lsp-rs
+  SERVER_REF: ${{ inputs.server_ref || vars.SERVER_REF || 'main' }}
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-version:
+    name: Check tag against package.json
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match package.json version ${version}"
+            exit 1
+          fi
+
+  server:
+    name: Server (${{ matrix.name }})
+    needs: check-version
+    # check-version is skipped for manual runs
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # musl: one static binary for every Linux distribution (glibc and Alpine)
+          - { name: linux-x64, os: ubuntu-latest, target: x86_64-unknown-linux-musl, test: true }
+          - { name: linux-arm64, os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl }
+          - { name: darwin-x64, os: macos-latest, target: x86_64-apple-darwin }
+          - { name: darwin-arm64, os: macos-latest, target: aarch64-apple-darwin }
+          - { name: win32-x64, os: windows-latest, target: x86_64-pc-windows-msvc }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SERVER_REPO }}
+          ref: ${{ env.SERVER_REF }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Test
+        if: matrix.test
+        run: cargo test --release --locked --workspace
+
+      - name: Build
+        run: cargo build --release --locked -p php-lsp --target ${{ matrix.target }}
+
+      - name: Smoke test
+        if: matrix.name != 'darwin-x64'
+        shell: bash
+        run: |
+          bin=target/${{ matrix.target }}/release/php-lsp
+          [ -f "$bin.exe" ] && bin="$bin.exe"
+          "$bin" --version
+          if command -v file >/dev/null; then file "$bin"; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-${{ matrix.name }}
+          path: |
+            target/${{ matrix.target }}/release/php-lsp
+            target/${{ matrix.target }}/release/php-lsp.exe
+          if-no-files-found: error
+
+  package:
+    name: Package (${{ matrix.target }})
+    needs: server
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { target: linux-x64, server: linux-x64 }
+          - { target: alpine-x64, server: linux-x64 }
+          - { target: linux-arm64, server: linux-arm64 }
+          - { target: alpine-arm64, server: linux-arm64 }
+          - { target: darwin-x64, server: darwin-x64 }
+          - { target: darwin-arm64, server: darwin-arm64 }
+          - { target: win32-x64, server: win32-x64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-${{ matrix.server }}
+          path: server
+
+      - name: Package
+        run: |
+          chmod +x server/php-lsp*
+          ls -l server
+          npx vsce package --target ${{ matrix.target }} -o php-lsp-vsc-${{ matrix.target }}.vsix
+          unzip -l php-lsp-vsc-${{ matrix.target }}.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: php-lsp-vsc-${{ matrix.target }}.vsix
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: package
+    if: github.event_name == 'push' || inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: vsix-*
+          path: dist-vsix
+          merge-multiple: true
+
+      - name: VS Code Marketplace
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::the VSCE_PAT secret is not set"
+            exit 1
+          fi
+          for f in dist-vsix/*.vsix; do
+            npx vsce publish --packagePath "$f"
+          done
+
+      - name: Open VSX
+        if: env.OVSX_PAT != ''
+        run: |
+          publisher=$(node -p "require('./package.json').publisher")
+          # the namespace has to exist once; fails harmlessly when it already does
+          npx --yes ovsx create-namespace "$publisher" --pat "$OVSX_PAT" || true
+          for f in dist-vsix/*.vsix; do
+            npx --yes ovsx publish "$f" --pat "$OVSX_PAT"
+          done
+
+      - name: GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-vsix/*.vsix
+          generate_release_notes: true
