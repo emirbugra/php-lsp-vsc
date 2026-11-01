@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- No longer marked as preview
+
 ## 0.2.0
 
 - New name: PHP & Laravel IntelliSense
