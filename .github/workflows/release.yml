@@ -112,6 +112,8 @@ jobs:
   package:
     name: Package (${{ matrix.target }})
     needs: server
+    # check-version (an ancestor) is skipped for manual runs, which would skip this job too
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -155,7 +157,7 @@ jobs:
   publish:
     name: Publish
     needs: package
-    if: github.event_name == 'push' || inputs.publish
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'push' || inputs.publish) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # GitHub release
