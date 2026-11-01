@@ -12,3 +12,4 @@ scripts/**
 server/.gitkeep
 *.vsix
 media/logo.svg
+media/screenshots/**

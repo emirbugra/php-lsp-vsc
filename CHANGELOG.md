@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- New name: PHP & Laravel IntelliSense
+- Rewritten Marketplace page, more search keywords
+
 ## 0.1.1
 
 - New extension icon
