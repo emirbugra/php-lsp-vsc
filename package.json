@@ -106,7 +106,13 @@
         },
         "phpLsp.formatter.tool": {
           "type": "string",
-          "enum": ["auto", "builtin", "pint", "php-cs-fixer", "off"],
+          "enum": [
+            "auto",
+            "builtin",
+            "pint",
+            "php-cs-fixer",
+            "off"
+          ],
           "enumDescriptions": [
             "The project's own tool when it has one (pint.json, .php-cs-fixer.php, or vendor/bin/pint / php-cs-fixer), otherwise the built-in formatter.",
             "Always the built-in formatter (settings: phpLsp.format.*).",
@@ -134,7 +140,17 @@
         },
         "phpLsp.format.preset": {
           "type": "string",
-          "enum": ["psr12", "per-cs", "per-cs3", "laravel", "symfony", "pear", "zend", "codeigniter", "phpstorm"],
+          "enum": [
+            "psr12",
+            "per-cs",
+            "per-cs3",
+            "laravel",
+            "symfony",
+            "pear",
+            "zend",
+            "codeigniter",
+            "phpstorm"
+          ],
           "enumDescriptions": [
             "PSR-12 (the same values as PhpStorm's PSR12 style).",
             "PER Coding Style 2.0 (trailing commas, short arrays, empty bodies as {}).",
@@ -1225,7 +1241,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
-    "@vscode/vsce": "^3.0.0",
+    "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.25.0",
     "typescript": "^5.4.0"
   }

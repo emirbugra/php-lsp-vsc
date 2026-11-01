@@ -5,9 +5,14 @@
 # - Run it by hand (Actions → Release → Run workflow) to build the packages only; tick "publish" to
 #   publish too.
 #
-# Secrets: VSCE_PAT (VS Code Marketplace, required for publishing), OVSX_PAT (Open VSX, optional:
-# skipped when not set). The server is built from emirbugra/php-lsp-rs at the "server_ref" input,
-# else the SERVER_REF repository variable, else main.
+# VS Code Marketplace: Trusted Publishing (OIDC). The publisher needs a policy for this repository
+# and release.yml (marketplace.visualstudio.com/manage → publisher → Trusted Publishing); no secret.
+# If a VSCE_PAT secret is set it is used instead.
+# Open VSX: OVSX_PAT secret (optional; skipped when not set).
+# The GitHub release (tag runs) is created first, so the .vsix files are there even when a
+# marketplace step fails.
+# The server is built from emirbugra/php-lsp-rs at the "server_ref" input, else the SERVER_REF
+# repository variable, else main.
 
 name: Release
 
@@ -124,7 +129,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -153,7 +158,8 @@ jobs:
     if: github.event_name == 'push' || inputs.publish
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # GitHub release
+      id-token: write # Marketplace Trusted Publishing (OIDC)
     env:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
@@ -162,7 +168,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -173,15 +179,12 @@ jobs:
           path: dist-vsix
           merge-multiple: true
 
-      - name: VS Code Marketplace
-        run: |
-          if [ -z "$VSCE_PAT" ]; then
-            echo "::error::the VSCE_PAT secret is not set"
-            exit 1
-          fi
-          for f in dist-vsix/*.vsix; do
-            npx vsce publish --packagePath "$f"
-          done
+      - name: GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-vsix/*.vsix
+          generate_release_notes: true
 
       - name: Open VSX
         if: env.OVSX_PAT != ''
@@ -193,9 +196,11 @@ jobs:
             npx --yes ovsx publish "$f" --pat "$OVSX_PAT"
           done
 
-      - name: GitHub release
-        if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist-vsix/*.vsix
-          generate_release_notes: true
+      - name: VS Code Marketplace
+        run: |
+          if [ -n "$VSCE_PAT" ]; then
+            npx vsce publish --packagePath dist-vsix/*.vsix
+          else
+            # Trusted Publishing: GitHub's OIDC token is exchanged for a short-lived Marketplace token
+            npx vsce publish --oidc --packagePath dist-vsix/*.vsix
+          fi
