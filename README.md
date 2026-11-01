@@ -3,7 +3,7 @@
 A fast PHP language server written in Rust, for VS Code. It indexes large projects (vendor included) in seconds and
 works with modern PHP 8.x as well as legacy PHP 4/5 code.
 
-The server lives in [php-lsp-rs](https://github.com/kodmanyagha/php-lsp-rs); this extension bundles it, so there is
+The server lives in [php-lsp-rs](https://github.com/emirbugra/php-lsp-rs); this extension bundles it, so there is
 nothing else to install.
 
 ## Features
@@ -62,8 +62,8 @@ VS Code's own basic PHP suggestions are turned off by default (`php.suggest.basi
 ## Development
 
 ```sh
-git clone https://github.com/kodmanyagha/php-lsp-rs
-git clone https://github.com/kodmanyagha/php-lsp-vsc
+git clone https://github.com/emirbugra/php-lsp-rs
+git clone https://github.com/emirbugra/php-lsp-vsc
 cd php-lsp-rs && cargo build --release
 cd ../php-lsp-vsc && npm install && npm run compile
 # press F5 in VS Code

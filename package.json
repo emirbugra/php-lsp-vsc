@@ -11,13 +11,13 @@
     "color": "#5B67A3",
     "theme": "dark"
   },
-  "homepage": "https://github.com/kodmanyagha/php-lsp-vsc#readme",
+  "homepage": "https://github.com/emirbugra/php-lsp-vsc#readme",
   "bugs": {
-    "url": "https://github.com/kodmanyagha/php-lsp-vsc/issues"
+    "url": "https://github.com/emirbugra/php-lsp-vsc/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kodmanyagha/php-lsp-vsc"
+    "url": "https://github.com/emirbugra/php-lsp-vsc"
   },
   "engines": {
     "vscode": "^1.85.0"

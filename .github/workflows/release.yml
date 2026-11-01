@@ -6,7 +6,7 @@
 #   publish too.
 #
 # Secrets: VSCE_PAT (VS Code Marketplace, required for publishing), OVSX_PAT (Open VSX, optional:
-# skipped when not set). The server is built from kodmanyagha/php-lsp-rs at the "server_ref" input,
+# skipped when not set). The server is built from emirbugra/php-lsp-rs at the "server_ref" input,
 # else the SERVER_REF repository variable, else main.
 
 name: Release
@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 env:
-  SERVER_REPO: kodmanyagha/php-lsp-rs
+  SERVER_REPO: emirbugra/php-lsp-rs
   SERVER_REF: ${{ inputs.server_ref || vars.SERVER_REF || 'main' }}
   CARGO_TERM_COLOR: always
 
