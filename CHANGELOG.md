@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- New extension icon
+
 ## 0.1.0
 
 First public preview.

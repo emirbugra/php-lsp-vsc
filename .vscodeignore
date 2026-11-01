@@ -11,3 +11,4 @@ scripts/**
 .gitignore
 server/.gitkeep
 *.vsix
+media/logo.svg

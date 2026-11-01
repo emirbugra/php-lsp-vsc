@@ -2,7 +2,7 @@
   "name": "php-lsp-vsc",
   "displayName": "PHP LSP (Rust)",
   "description": "Fast PHP language server written in Rust: completion, navigation, references, rename, inspections, type inference, Laravel support and a built-in PhpStorm-compatible formatter.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "preview": true,
   "publisher": "emirbugra",
   "license": "MIT",
