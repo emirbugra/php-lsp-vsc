@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- Conditional return types are evaluated per call: `config()` is a `Repository`, `app(User::class)` a
+  `User`, `config('app.name')` a plain value
+- New inspection: values that don't fit a native type (arguments and `return` values), aware of
+  `declare(strict_types=1)`
+- Refactorings: Extract variable (also replacing every copy of the expression) and Inline variable
+- WordPress hooks: completion of action / filter names, go to definition (where a hook is fired, and
+  from `do_action` to its callbacks), hover, go to definition of callbacks named by strings
+- Hover and inlay hints show scalar and array types of variables (`$data: array`, `$email: string`)
+
 ## 0.4.0
 
 - Blade templates: completion, go to definition, hover, references and inlay hints inside `{{ }}`,

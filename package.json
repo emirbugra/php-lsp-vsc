@@ -2,7 +2,7 @@
   "name": "php-lsp-vsc",
   "displayName": "PHP & Laravel IntelliSense – Fast & Free",
   "description": "Fast, lightweight, free and open source PHP IntelliSense for Laravel, Blade, Symfony and CodeIgniter: smart completion, go to definition, references, rename, inspections, quick fixes and a built-in formatter that reads PhpStorm code styles.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "emirbugra",
   "license": "MIT",
   "icon": "media/icon.png",
