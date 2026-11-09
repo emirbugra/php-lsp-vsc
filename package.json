@@ -1,8 +1,8 @@
 {
   "name": "php-lsp-vsc",
   "displayName": "PHP & Laravel IntelliSense – Fast & Free",
-  "description": "Fast, lightweight, free and open source PHP & Laravel IntelliSense: smart completion, go to definition, references, rename, inspections, quick fixes and a built-in formatter that reads PhpStorm code styles.",
-  "version": "0.2.1",
+  "description": "Fast, lightweight, free and open source PHP IntelliSense for Laravel, Blade, Symfony and CodeIgniter: smart completion, go to definition, references, rename, inspections, quick fixes and a built-in formatter that reads PhpStorm code styles.",
+  "version": "0.4.0",
   "publisher": "emirbugra",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -31,9 +31,9 @@
     "laravel",
     "intellisense",
     "autocomplete",
-    "completion",
+    "codeigniter",
     "language server",
-    "lsp",
+    "blade",
     "go to definition",
     "find references",
     "rename",
@@ -43,7 +43,7 @@
     "linter",
     "formatter",
     "psr-12",
-    "per-cs",
+    "symfony",
     "code style",
     "php-cs-fixer",
     "pint",
@@ -60,7 +60,8 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onLanguage:php"
+    "onLanguage:php",
+    "onLanguage:blade"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -158,6 +159,21 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Warn about Laravel route, view, config and translation names that do not exist (`route('…')`, `view('…')`, `config('…')`, `__('…')`). Restart the server after changing."
+        },
+        "phpLsp.inlayHints.parameterNames": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show parameter names before call arguments (`greet(name: $x)`), unless the argument already says it."
+        },
+        "phpLsp.inlayHints.variableTypes": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the inferred type of a variable where it gets its value (`$user: User = User::find(1)`, `foreach` variables, untyped closure parameters)."
+        },
+        "phpLsp.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show reference counts above classes, functions and methods, and implementation / subclass / override counts where there are any."
         },
         "phpLsp.format.preset": {
           "type": "string",

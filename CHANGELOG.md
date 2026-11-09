@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+- Blade templates: completion, go to definition, hover, references and inlay hints inside `{{ }}`,
+  `@php` and directives; the variables a controller passes to the view, with their types; view
+  names in `@extends` / `@include`; warnings for unknown methods, routes, views and translations
+- Symfony: route names (attributes, annotations, YAML, generated names) and Twig template names
+  with completion, go to definition and "not found" warnings
+- CodeIgniter 4: routes, controller handlers in `Routes.php`, views (with the controller's data),
+  language keys, config classes; types for `model()`, `service()` and `config()`
+- New inspection: missing / too many arguments in calls
+- Inlay hints show the inferred type of variables (`$user: User`)
+- Code lens: reference counts, implementations, subclasses and overrides
+- Laravel facade aliases (`Route::`, `Str::`, package aliases) resolve without `use`
+- New settings: `phpLsp.inlayHints.parameterNames`, `phpLsp.inlayHints.variableTypes`,
+  `phpLsp.codeLens.enabled`
+
 ## 0.2.1
 
 - No longer marked as preview

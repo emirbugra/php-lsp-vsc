@@ -85,14 +85,24 @@ function setState(s: typeof state, detail?: string): void {
   renderPanel();
 }
 
-/** The built-in formatter's settings, as the server reads them (also sent when they change). */
-function formatSettings(): Record<string, unknown> {
+/** Settings the server applies without a restart, as it reads them (also sent when they change). */
+function liveSettings(): Record<string, unknown> {
   const cfg = vscode.workspace.getConfiguration('phpLsp');
   return {
     formatPreset: cfg.get<string>('format.preset', 'psr12'),
     formatOptions: cfg.get<Record<string, unknown>>('format.options', {}),
     useProjectCodeStyle: cfg.get<boolean>('format.useProjectCodeStyle', true),
+    inlayParameterNames: cfg.get<boolean>('inlayHints.parameterNames', true),
+    inlayVariableTypes: cfg.get<boolean>('inlayHints.variableTypes', true),
+    codeLens: cfg.get<boolean>('codeLens.enabled', true),
   };
+}
+
+/** Target of the server's code lenses: `editor.action.showReferences` wants VS Code objects. */
+function showReferences(uri: string, position: { line: number; character: number }, locations: { uri: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } }[]): void {
+  const pos = (p: { line: number; character: number }) => new vscode.Position(p.line, p.character);
+  const locs = (locations ?? []).map((l) => new vscode.Location(vscode.Uri.parse(l.uri), new vscode.Range(pos(l.range.start), pos(l.range.end))));
+  void vscode.commands.executeCommand('editor.action.showReferences', vscode.Uri.parse(uri), pos(position), locs);
 }
 
 interface ImportedStyle {
@@ -240,6 +250,8 @@ async function startClient(context: vscode.ExtensionContext): Promise<void> {
     documentSelector: [
       { scheme: 'file', language: 'php' },
       { scheme: 'untitled', language: 'php' },
+      // `.blade.php` files when a Blade extension gives them their own language
+      { scheme: 'file', language: 'blade' },
     ],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{php,phtml,inc,php4,php5,module,install}'),
@@ -251,7 +263,7 @@ async function startClient(context: vscode.ExtensionContext): Promise<void> {
       formatterPath: cfg.get<string>('formatter.path', ''),
       laravelDiagnostics: cfg.get<boolean>('laravel.diagnostics', true),
       phpVersion: cfg.get<string>('phpVersion', ''),
-      ...formatSettings(),
+      ...liveSettings(),
     },
     outputChannel: output,
   };
@@ -408,10 +420,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('phpLsp.showOutput', () => output.show()),
     vscode.commands.registerCommand('phpLsp.importCodeStyle', importCodeStyle),
     vscode.commands.registerCommand('phpLsp.exportCodeStyle', exportCodeStyle),
+    vscode.commands.registerCommand('phpLsp.showReferences', showReferences),
     vscode.workspace.onDidChangeConfiguration(async (e) => {
       // formatter settings apply without a restart
-      if (e.affectsConfiguration('phpLsp.format') && client && state === 'running') {
-        await client.sendNotification('workspace/didChangeConfiguration', { settings: formatSettings() });
+      const live = ['phpLsp.format', 'phpLsp.inlayHints', 'phpLsp.codeLens'];
+      if (live.some((k) => e.affectsConfiguration(k)) && client && state === 'running') {
+        await client.sendNotification('workspace/didChangeConfiguration', { settings: liveSettings() });
       }
       if (e.affectsConfiguration('phpLsp.serverPath') || e.affectsConfiguration('phpLsp.indexVendor') || e.affectsConfiguration('phpLsp.inspections.enabled') || e.affectsConfiguration('phpLsp.formatter') || e.affectsConfiguration('phpLsp.phpVersion') || e.affectsConfiguration('phpLsp.laravel')) {
         const pick = await vscode.window.showInformationMessage(

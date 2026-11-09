@@ -1,6 +1,6 @@
 # PHP & Laravel IntelliSense
 
-**Fast, lightweight, free and open source PHP & Laravel support for VS Code.**
+**Fast, lightweight, free and open source PHP support for VS Code — with Laravel, Blade, Symfony and CodeIgniter 4.**
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/emirbugra.php-lsp-vsc?label=Marketplace&color=b4521c)](https://marketplace.visualstudio.com/items?itemName=emirbugra.php-lsp-vsc)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/emirbugra.php-lsp-vsc?color=b4521c)](https://marketplace.visualstudio.com/items?itemName=emirbugra.php-lsp-vsc)
@@ -40,7 +40,9 @@ no telemetry.
 
 ### 💡 Smart editing
 - Completion that understands types: docblocks, `@template` generics, `instanceof` and condition narrowing
-- Hover with signatures and documentation, signature help, parameter name hints
+- Hover with signatures and documentation, signature help
+- Inlay hints: parameter names and the inferred type of variables (`$user: User`)
+- Code lens: reference counts, implementations, subclasses and overrides above declarations
 - Quick fixes and refactorings:
   - ➕ Add return type / parameter type / property type (respects your project's PHP version)
   - 📝 Add PHPDoc
@@ -49,6 +51,7 @@ no telemetry.
 
 ### 🔍 Inspections
 - Undefined classes, functions, methods and variables
+- Missing or too many arguments in calls
 - Unused imports
 - Missing abstract method implementations
 - Deprecated usages
@@ -58,6 +61,25 @@ no telemetry.
 - **Routes, views, config, translations and `.env`**: completion and go to definition inside
   `route('…')`, `view('…')`, `config('…')`, `__('…')`, `env('…')`
 - Warnings for route, view, config and translation names that don't exist, with a "Change to…" fix
+- Facade aliases (`Route::`, `Str::`, `Form::` …) work without `use`
+
+### 🗡️ Blade
+- Completion, go to definition, hover, references and type hints inside `{{ }}`, `{!! !!}`, `@php`,
+  directives (`@if`, `@foreach`, …) and component attributes (`:title="$post->title"`)
+- Knows the variables each view receives from your controllers (`view('posts.index', compact('posts'))`)
+  and their types, so `$post->` completes inside `@foreach ($posts as $post)`
+- View names in `@extends`, `@include`, `@component`; unknown routes, views and translations are reported
+
+### 🎼 Symfony
+- Route names in `generateUrl()`, `redirectToRoute()`, `$router->generate()`: completion, go to
+  definition, "not found" warnings — from `#[Route]` attributes, `@Route` annotations, YAML files and
+  Symfony's generated names
+- Twig template names in `render()`, `renderView()`, `#[Template]`
+
+### 🔥 CodeIgniter 4
+- `view()`, `route_to()`, `lang()`, `config()`, `env()` strings: completion, go to definition, warnings
+- Controller handlers in `app/Config/Routes.php` (`'Home::index'`): completion and go to definition
+- Views know the data passed to them; `model('UserModel')`, `service('request')`, `config('App')` are typed
 
 <!-- GIF: Laravel route/view completion → media/screenshots/laravel.gif
 ![Laravel](media/screenshots/laravel.gif)
@@ -88,6 +110,9 @@ no telemetry.
 | `phpLsp.format.preset` | `psr12` | Built-in formatter preset |
 | `phpLsp.format.options` | `{}` | Overrides for the preset, by PhpStorm option name |
 | `phpLsp.format.useProjectCodeStyle` | `true` | Use `.idea/codeStyles` and `.editorconfig` |
+| `phpLsp.inlayHints.parameterNames` | `true` | Parameter name hints at call sites |
+| `phpLsp.inlayHints.variableTypes` | `true` | Inferred type hints after variables |
+| `phpLsp.codeLens.enabled` | `true` | Reference / implementation counts above declarations |
 | `phpLsp.serverPath` | `""` | Use a different `php-lsp` binary |
 | `phpLsp.logLevel` | `info` | Server log level |
 
