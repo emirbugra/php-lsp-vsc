@@ -98,6 +98,55 @@ function liveSettings(): Record<string, unknown> {
   };
 }
 
+/** "Move class…": ask for the new fully qualified name, then apply the server's edit. */
+async function moveClass(uri?: string, fqn?: string): Promise<void> {
+  if (!client) {
+    vscode.window.showWarningMessage('PHP LSP is not running.');
+    return;
+  }
+  let params: Record<string, unknown>;
+  if (uri && fqn) {
+    params = { uri, fqn };
+  } else {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== 'php') {
+      vscode.window.showWarningMessage('Open the PHP file of the class to move.');
+      return;
+    }
+    params = { uri: editor.document.uri.toString(), position: client.code2ProtocolConverter.asPosition(editor.selection.active) };
+  }
+  try {
+    const info = await client.sendRequest<{ fqn: string }>('phpLsp/moveClass', params);
+    const nsEnd = Math.max(info.fqn.lastIndexOf('\\'), 0);
+    const ident = '[A-Za-z_\\u0080-\\uffff][A-Za-z0-9_\\u0080-\\uffff]*';
+    const valid = new RegExp(`^\\\\?${ident}(\\\\${ident})*$`);
+    const newFqn = await vscode.window.showInputBox({
+      title: 'Move class',
+      prompt: 'New fully qualified name (namespace and class name)',
+      value: info.fqn,
+      valueSelection: [0, nsEnd],
+      validateInput: (v) => (valid.test(v.trim()) ? undefined : 'Not a valid class name'),
+    });
+    if (!newFqn || newFqn.trim().replace(/^\\/, '') === info.fqn) {
+      return;
+    }
+    const result = await client.sendRequest<{ edit: unknown; newPath?: string | null }>('phpLsp/moveClass', {
+      ...params,
+      fqn: info.fqn,
+      newFqn: newFqn.trim(),
+    });
+    if (result.newPath) {
+      await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(result.newPath)));
+    }
+    const edit = await client.protocol2CodeConverter.asWorkspaceEdit(result.edit as never);
+    if (!edit || !(await vscode.workspace.applyEdit(edit))) {
+      vscode.window.showErrorMessage('PHP LSP: the class could not be moved.');
+    }
+  } catch (err) {
+    vscode.window.showErrorMessage(`PHP LSP: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 /** Target of the server's code lenses: `editor.action.showReferences` wants VS Code objects. */
 function showReferences(uri: string, position: { line: number; character: number }, locations: { uri: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } }[]): void {
   const pos = (p: { line: number; character: number }) => new vscode.Position(p.line, p.character);
@@ -421,6 +470,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('phpLsp.importCodeStyle', importCodeStyle),
     vscode.commands.registerCommand('phpLsp.exportCodeStyle', exportCodeStyle),
     vscode.commands.registerCommand('phpLsp.showReferences', showReferences),
+    vscode.commands.registerCommand('phpLsp.moveClass', moveClass),
     vscode.workspace.onDidChangeConfiguration(async (e) => {
       // formatter settings apply without a restart
       const live = ['phpLsp.format', 'phpLsp.inlayHints', 'phpLsp.codeLens'];

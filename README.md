@@ -98,6 +98,13 @@ no telemetry.
 ![Formatter](media/screenshots/format.gif)
 -->
 
+## 📥 Installing in VSCodium, Cursor, Windsurf and other editors
+
+The extension is on the VS Code Marketplace. In editors that don't use the Marketplace, install it from a `.vsix` file:
+
+1. Download the file for your platform from the [latest release](https://github.com/emirbugra/php-lsp-vsc/releases/latest) (for example `php-lsp-vsc-linux-x64.vsix`, `php-lsp-vsc-darwin-arm64.vsix`, `php-lsp-vsc-win32-x64.vsix`).
+2. Open the Extensions view, click `…` at the top and choose **Install from VSIX…**, or run `codium --install-extension php-lsp-vsc-linux-x64.vsix` (`cursor` / `windsurf` for those editors).
+
 ## ⚙️ Settings
 
 | Setting | Default | |

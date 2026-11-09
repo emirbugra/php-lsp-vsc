@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- Refactoring: Extract method — the selected statements become a new method (or function), with
+  parameters and return values worked out from the variables they use
+- Refactoring: Move class — give a class a new namespace and/or name (code action on the class
+  name, or "PHP LSP: Move Class…"); the file moves to its PSR-4 place and `use` lines, names,
+  docblocks and strings across the project are updated
+- README: installing the `.vsix` in VSCodium, Cursor, Windsurf and other editors
+
 ## 0.5.0
 
 - Conditional return types are evaluated per call: `config()` is a `Repository`, `app(User::class)` a
