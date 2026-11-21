@@ -2,7 +2,7 @@
   "name": "php-lsp-vsc",
   "displayName": "PHP & Laravel IntelliSense – Fast & Free",
   "description": "Fast, lightweight, free and open source PHP IntelliSense for Laravel, Blade, Symfony and CodeIgniter: smart completion, go to definition, references, rename, inspections, quick fixes and a built-in formatter that reads PhpStorm code styles.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "emirbugra",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -93,6 +93,10 @@
       {
         "command": "phpLsp.moveClass",
         "title": "PHP LSP: Move Class…"
+      },
+      {
+        "command": "phpLsp.whatsNew",
+        "title": "PHP LSP: What's New"
       }
     ],
     "configuration": {
@@ -159,6 +163,18 @@
           "default": true,
           "markdownDescription": "Report undefined classes/functions/methods, unused imports, missing abstract implementations and deprecated usages. Restart the server after changing."
         },
+        "phpLsp.inspections.modernize": {
+          "type": "string",
+          "enum": ["off", "hint", "information", "warning"],
+          "enumDescriptions": [
+            "Do not point out code that can be written the modern way.",
+            "Faded dots in the editor only; not in the Problems list.",
+            "Listed in the Problems panel (default).",
+            "Listed as warnings."
+          ],
+          "default": "information",
+          "markdownDescription": "Point out code that can be written the modern way for the project's PHP version (`array()`, `strpos() !== false`, `isset() ? :`, `if (!isset())`, closures, constructor promotion), each with a quick fix. Restart the server after changing."
+        },
         "phpLsp.laravel.diagnostics": {
           "type": "boolean",
           "default": true,
@@ -173,6 +189,11 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Show the inferred type of a variable where it gets its value (`$user: User = User::find(1)`, `foreach` variables, untyped closure parameters)."
+        },
+        "phpLsp.showWhatsNew": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Open the release notes after the extension has been updated."
         },
         "phpLsp.codeLens.enabled": {
           "type": "boolean",

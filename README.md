@@ -48,11 +48,17 @@ no telemetry.
   - 📝 Add PHPDoc
   - 📥 Import class, 🧹 remove unused imports, optimize imports
   - 🏗️ Implement missing methods, create method
+  - 🧱 Generate constructor (also with promoted properties), getters, setters, fluent setters
+  - 🆕 Modernize: constructor promotion, `array()` → `[]`, `str_contains()` / `str_starts_with()`, `??` / `??=`,
+    arrow functions — only what your project's PHP version supports. Listed in the Problems panel with a quick
+    fix (`phpLsp.inspections.modernize`: `off` / `hint` / `information` / `warning`); generated code follows your
+    code style (`.editorconfig`, PhpStorm style)
 
 ### 🔍 Inspections
 - Undefined classes, functions, methods and variables
 - Missing or too many arguments in calls
-- Unused imports
+- Unused imports and unused variables
+- Unreachable code, unnecessary `else` after `return`
 - Missing abstract method implementations
 - Deprecated usages
 

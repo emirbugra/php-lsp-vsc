@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.0
+
+- Generate code: constructor (plain, or with promoted properties on PHP 8), getters, setters and
+  fluent setters — for the property under the cursor or for the whole class
+- Modernize quick fixes, matched to your project's PHP version: constructor property promotion,
+  `array()` → `[]`, `strpos() !== false` → `str_contains()` / `str_starts_with()`, `isset()` ternary
+  → `??`, `if (!isset($a)) { $a = … }` → `??=`, closure → arrow function
+- These show up in the Problems panel as information, so old code is easy to find; each has a quick fix.
+  `phpLsp.inspections.modernize` sets how they are reported: `off`, `hint`, `information` (default)
+  or `warning`
+- Generated methods follow your code style (`.editorconfig`, PhpStorm style, `phpLsp.format.*`):
+  brace position, blank lines between methods, wrapping of long parameter lists
+- New inspections: unreachable code (with a quick fix to remove it), unused variables and a hint for
+  an unnecessary `else` after `return`
+- A "What's new" page opens after an update (`phpLsp.showWhatsNew` turns it off; "PHP LSP: What's New"
+  opens it again)
+
 ## 0.6.0
 
 - Refactoring: Extract method — the selected statements become a new method (or function), with

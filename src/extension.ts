@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { maybeShowWhatsNew, showWhatsNew } from './whatsNew';
 import { LanguageClient, LanguageClientOptions, ServerOptions, State, TransportKind } from 'vscode-languageclient/node';
 
 let client: LanguageClient | undefined;
@@ -308,6 +309,7 @@ async function startClient(context: vscode.ExtensionContext): Promise<void> {
     initializationOptions: {
       indexVendor: cfg.get<boolean>('indexVendor', true),
       inspections: cfg.get<boolean>('inspections.enabled', true),
+      modernize: cfg.get<string>('inspections.modernize', 'information'),
       formatter: cfg.get<string>('formatter.tool', 'auto'),
       formatterPath: cfg.get<string>('formatter.path', ''),
       laravelDiagnostics: cfg.get<boolean>('laravel.diagnostics', true),
@@ -471,13 +473,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('phpLsp.exportCodeStyle', exportCodeStyle),
     vscode.commands.registerCommand('phpLsp.showReferences', showReferences),
     vscode.commands.registerCommand('phpLsp.moveClass', moveClass),
+    vscode.commands.registerCommand('phpLsp.whatsNew', () => showWhatsNew(context)),
     vscode.workspace.onDidChangeConfiguration(async (e) => {
       // formatter settings apply without a restart
       const live = ['phpLsp.format', 'phpLsp.inlayHints', 'phpLsp.codeLens'];
       if (live.some((k) => e.affectsConfiguration(k)) && client && state === 'running') {
         await client.sendNotification('workspace/didChangeConfiguration', { settings: liveSettings() });
       }
-      if (e.affectsConfiguration('phpLsp.serverPath') || e.affectsConfiguration('phpLsp.indexVendor') || e.affectsConfiguration('phpLsp.inspections.enabled') || e.affectsConfiguration('phpLsp.formatter') || e.affectsConfiguration('phpLsp.phpVersion') || e.affectsConfiguration('phpLsp.laravel')) {
+      if (e.affectsConfiguration('phpLsp.serverPath') || e.affectsConfiguration('phpLsp.indexVendor') || e.affectsConfiguration('phpLsp.inspections') || e.affectsConfiguration('phpLsp.formatter') || e.affectsConfiguration('phpLsp.phpVersion') || e.affectsConfiguration('phpLsp.laravel')) {
         const pick = await vscode.window.showInformationMessage(
           'PHP LSP settings changed. Restart the language server to apply them.',
           'Restart'
@@ -489,6 +492,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  maybeShowWhatsNew(context);
   await startClient(context);
 }
 
